@@ -69,7 +69,7 @@ class Level:
 
     # 自动设置通关积分
     def get_pass_score(self):
-        return self.level_num * 10
+        return 40
 
     # 判断玩家是否通关
     def is_passed(self, player_score):

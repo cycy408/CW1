@@ -1,8 +1,15 @@
 {
   "cycy": {
     "username": "cycy",
-    "score": 0,
-    "level": 1,
-    "mastered_topics": []
+    "score": 50,
+    "level": 6,
+    "mastered_topics": [
+      "Python Basics - Level 1",
+      "Python Basics - Level 2",
+      "Python Basics - Level 3",
+      "Python Basics - Level 4",
+      "Python Basics - Level 5",
+      "Python Basics - Level 6"
+    ]
   }
 }

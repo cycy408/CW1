@@ -1,6 +1,11 @@
+import os
 import customtkinter as ctk
 from tkinter import messagebox
 from user_auth import UserAuth
+from data_manager import DataManager
+from game_class import GameUI
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 
 ctk.set_appearance_mode("light")
@@ -167,9 +172,13 @@ class GameMainUI:
 
 
 if __name__ == "__main__":
-    root = ctk.CTk()
-    app = GameMainUI(root)
-    root.mainloop()
+    login_root = ctk.CTk()
+    app = GameMainUI(login_root)
+    login_root.mainloop()
 
+    # 登录成功后，进入游戏
     if app.current_user:
-        print(f"\n[Game] User {app.current_user} logged in, entering game...")
+        dm = DataManager()
+        player = dm.load_player(app.current_user)
+        game = GameUI(player, dm)
+        game.run()

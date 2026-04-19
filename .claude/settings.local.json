@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(timeout 3 python main.py)"
+      "Bash(timeout 3 python main.py)",
+      "Bash(python -c \"from game_class import Player, Level, QuestionBank, GameUI; from data_manager import DataManager; print\\('All imports OK'\\)\")",
+      "Bash(python -c \"import py_compile; py_compile.compile\\('main.py', doraise=True\\); print\\('main.py OK'\\)\")",
+      "mcp__ide__getDiagnostics",
+      "Bash(timeout 5 python main.py)",
+      "Bash(python -c ' *)"
     ]
   }
 }

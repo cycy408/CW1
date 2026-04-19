@@ -1,5 +1,6 @@
 import json
 import os
+from game_class import Player
 
 class DataManager:
     def __init__(self):
@@ -32,5 +33,21 @@ class DataManager:
         with open(self.progress_file, "r") as f:
             data = json.load(f)
         data[username] = progress
+        with open(self.progress_file, "w") as f:
+            json.dump(data, f, indent=2)
+
+    # 加载玩家（OOP）
+    def load_player(self, username):
+        with open(self.progress_file, "r") as f:
+            data = json.load(f)
+        if username in data:
+            return Player.from_dict(data[username])
+        return Player(username)
+
+    # 保存玩家（OOP）
+    def save_player(self, player):
+        with open(self.progress_file, "r") as f:
+            data = json.load(f)
+        data[player.username] = player.to_dict()
         with open(self.progress_file, "w") as f:
             json.dump(data, f, indent=2)

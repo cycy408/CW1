@@ -6,7 +6,10 @@
       "Bash(python -c \"import py_compile; py_compile.compile\\('main.py', doraise=True\\); print\\('main.py OK'\\)\")",
       "mcp__ide__getDiagnostics",
       "Bash(timeout 5 python main.py)",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "Bash(python -c \"import pygame; print\\(pygame.ver\\)\")",
+      "Bash(timeout 5 python drag_puzzel.py)",
+      "Bash(python -c \"import py_compile; py_compile.compile\\('main.py', doraise=True\\); print\\('OK'\\)\")"
     ]
   }
 }

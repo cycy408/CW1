@@ -1,4 +1,6 @@
 import os
+import subprocess
+import sys
 import customtkinter as ctk
 from tkinter import messagebox
 from user_auth import UserAuth
@@ -171,14 +173,87 @@ class GameMainUI:
             messagebox.showerror("Failed", msg)
 
 
+class GameSelectUI:
+    def __init__(self, root, username):
+        self.root = root
+        self.username = username
+        self.choice = None
+
+        self.root.title("Select Game — INT101")
+        self.root.geometry("520x420")
+        self.root.resizable(False, False)
+        self.root.configure(fg_color="#f0f4ff")
+
+        card = ctk.CTkFrame(
+            root, width=420, height=350, corner_radius=20,
+            fg_color="white", border_width=1, border_color="#e0e6f0",
+        )
+        card.place(relx=0.5, rely=0.5, anchor="center")
+        card.pack_propagate(False)
+
+        ctk.CTkLabel(
+            card, text=f"Welcome, {username}!",
+            font=("Segoe UI", 20, "bold"), text_color="#1a1a2e",
+        ).pack(pady=(30, 4))
+
+        ctk.CTkLabel(
+            card, text="Choose a game to play",
+            font=("Segoe UI", 13), text_color="#8892a6",
+        ).pack(pady=(0, 28))
+
+        btn_area = ctk.CTkFrame(card, fg_color="transparent")
+        btn_area.pack(padx=40, fill="x")
+
+        quiz_btn = ctk.CTkButton(
+            btn_area, text="Quiz Game",
+            font=("Segoe UI", 15, "bold"), height=60, corner_radius=14,
+            fg_color="#4a6cf7", hover_color="#3b5ae0",
+            command=lambda: self._select("quiz"),
+        )
+        quiz_btn.pack(fill="x", pady=(0, 10))
+
+        ctk.CTkLabel(
+            btn_area, text="Answer Python questions to level up",
+            font=("Segoe UI", 11), text_color="#8892a6",
+        ).pack(pady=(0, 18))
+
+        puzzle_btn = ctk.CTkButton(
+            btn_area, text="Code Puzzle",
+            font=("Segoe UI", 15, "bold"), height=60, corner_radius=14,
+            fg_color="#26A69A", hover_color="#1e8c82",
+            command=lambda: self._select("puzzle"),
+        )
+        puzzle_btn.pack(fill="x", pady=(0, 10))
+
+        ctk.CTkLabel(
+            btn_area, text="Drag and drop code blocks into the correct order",
+            font=("Segoe UI", 11), text_color="#8892a6",
+        ).pack(pady=(0, 10))
+
+    def _select(self, choice):
+        self.choice = choice
+        self.root.destroy()
+
+
 if __name__ == "__main__":
     login_root = ctk.CTk()
     app = GameMainUI(login_root)
     login_root.mainloop()
 
-    # 登录成功后，进入游戏
-    if app.current_user:
-        dm = DataManager()
-        player = dm.load_player(app.current_user)
-        game = GameUI(player, dm)
-        game.run()
+    while app.current_user:
+        select_root = ctk.CTk()
+        selector = GameSelectUI(select_root, app.current_user)
+        select_root.mainloop()
+
+        if selector.choice == "quiz":
+            dm = DataManager()
+            player = dm.load_player(app.current_user)
+            game = GameUI(player, dm)
+            game.run()
+        elif selector.choice == "puzzle":
+            proc = subprocess.Popen(
+                [sys.executable, os.path.join(os.path.dirname(__file__), "drag_puzzel.py")],
+            )
+            proc.wait()
+        else:
+            break

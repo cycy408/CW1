@@ -1,27 +1,32 @@
-import tkinter as tk
-from tkinter import messagebox
+import pygame
+import sys
 import random
 
+pygame.init()
+
+WIDTH, HEIGHT = 820, 560
+FPS = 60
+
 PALETTE = {
-    "bg":           "#1e1e2e",
-    "surface":      "#313244",
-    "overlay":      "#45475a",
-    "text":         "#cdd6f4",
-    "subtext":      "#a6adc8",
-    "blue":         "#89b4fa",
-    "green":        "#a6e3a1",
-    "red":          "#f38ba8",
-    "yellow":       "#f9e2af",
-    "mauve":        "#cba6f7",
-    "teal":         "#94e2d5",
-    "peach":        "#fab387",
-    "slot_bg":      "#585b70",
-    "slot_border":  "#6c7086",
-    "block_border": "#7f849c",
+    "bg":           "#F5F5F5",
+    "surface":      "#FFFFFF",
+    "overlay":      "#E0E0E0",
+    "text":         "#212121",
+    "subtext":      "#757575",
+    "blue":         "#42A5F5",
+    "green":        "#66BB6A",
+    "red":          "#EF5350",
+    "yellow":       "#FFA726",
+    "mauve":        "#AB47BC",
+    "teal":         "#26A69A",
+    "peach":        "#FF7043",
+    "slot_bg":      "#E8E8E8",
+    "slot_border":  "#BDBDBD",
+    "block_border": "#9E9E9E",
+    "white":        "#FFFFFF",
 }
 
-BLOCK_COLORS = [PALETTE["blue"], PALETTE["mauve"], PALETTE["teal"],
-                PALETTE["peach"], PALETTE["yellow"], PALETTE["green"]]
+BLOCK_COLORS_KEYS = ["blue", "mauve", "teal", "peach", "yellow", "green"]
 
 PUZZLES = [
     {
@@ -72,130 +77,171 @@ PUZZLES = [
     },
 ]
 
-SLOT_W    = 340
-SLOT_H    = 38
-SLOT_PAD  = 6
-LEFT_X    = 40
-RIGHT_X   = 430
-TOP_Y     = 130
-BLOCK_FONT = ("Consolas", 11)
-TITLE_FONT = ("Segoe UI", 20, "bold")
-DESC_FONT  = ("Segoe UI", 11)
-SLOT_FONT  = ("Consolas", 10)
-BTN_FONT   = ("Segoe UI", 10, "bold")
+SLOT_W = 340
+SLOT_H = 38
+SLOT_PAD = 6
+LEFT_X = 40
+RIGHT_X = 430
+TOP_Y = 130
+HEADER_H = 60
+BTN_W = 80
+BTN_H = 32
+
+
+def hex_to_rgb(h):
+    h = h.lstrip("#")
+    return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+
+
+C = {k: hex_to_rgb(v) for k, v in PALETTE.items()}
+BLOCK_COLORS = [C[k] for k in BLOCK_COLORS_KEYS]
+
+
+def get_font(size, bold=False):
+    for name in ["consolas", "couriernew", "monospace"]:
+        try:
+            return pygame.font.SysFont(name, size, bold=bold)
+        except Exception:
+            continue
+    return pygame.font.Font(None, size)
+
+
+def get_ui_font(size, bold=False):
+    for name in ["segoeui", "arial", "helvetica"]:
+        try:
+            return pygame.font.SysFont(name, size, bold=bold)
+        except Exception:
+            continue
+    return pygame.font.Font(None, size)
+
+
+class Button:
+    def __init__(self, x, y, w, h, text, color, font):
+        self.rect = pygame.Rect(x, y, w, h)
+        self.text = text
+        self.color = color
+        self.font = font
+        self.hovered = False
+        self.visible = True
+
+    def draw(self, surface):
+        if not self.visible:
+            return
+        bg = C["text"] if self.hovered else self.color
+        pygame.draw.rect(surface, bg, self.rect, border_radius=4)
+        txt_surf = self.font.render(self.text, True, C["white"])
+        tx = self.rect.x + (self.rect.w - txt_surf.get_width()) // 2
+        ty = self.rect.y + (self.rect.h - txt_surf.get_height()) // 2
+        surface.blit(txt_surf, (tx, ty))
+
+    def handle_event(self, event):
+        if not self.visible:
+            return False
+        if event.type == pygame.MOUSEMOTION:
+            self.hovered = self.rect.collidepoint(event.pos)
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.rect.collidepoint(event.pos):
+                return True
+        return False
+
+
+class Block:
+    def __init__(self, x, y, code, color, font):
+        self.rect = pygame.Rect(x, y, SLOT_W, SLOT_H)
+        self.code = code
+        self.color = color
+        self.font = font
+        self.home_x = x
+        self.home_y = y
+        self.snapped_slot = None
+        self.dragging = False
+        self.enabled = True
+
+    def draw(self, surface):
+        pygame.draw.rect(surface, self.color, self.rect, border_radius=4)
+        pygame.draw.rect(surface, C["block_border"], self.rect, 2, border_radius=4)
+        txt = self.font.render("  " + self.code, True, C["white"])
+        surface.blit(txt, (self.rect.x + 6, self.rect.y + (SLOT_H - txt.get_height()) // 2))
+
+    def contains(self, pos):
+        return self.rect.collidepoint(pos)
+
+    def go_home(self):
+        self.rect.x = self.home_x
+        self.rect.y = self.home_y
+
+
+class Slot:
+    def __init__(self, x, y, index, font):
+        self.rect = pygame.Rect(x, y, SLOT_W, SLOT_H)
+        self.index = index
+        self.font = font
+        self.code = None
+        self.bg_color = C["slot_bg"]
+        self.border_color = C["slot_border"]
+
+    def draw(self, surface):
+        pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=4)
+        pygame.draw.rect(surface, self.border_color, self.rect, 1, border_radius=4)
+        txt = self.font.render(f"  {self.index + 1}", True, C["slot_border"])
+        surface.blit(txt, (self.rect.x + 4, self.rect.y + (SLOT_H - txt.get_height()) // 2))
+
+    def reset_color(self):
+        self.bg_color = C["slot_bg"]
+        self.border_color = C["slot_border"]
 
 
 class CodeDragPuzzle:
+    def __init__(self):
+        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        pygame.display.set_caption("Code Puzzle | INT101")
+        self.clock = pygame.time.Clock()
 
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Code Puzzle | INT101")
-        self.root.geometry("820x560")
-        self.root.resizable(False, False)
-        self.root.config(bg=PALETTE["bg"])
+        self.code_font = get_font(14)
+        self.slot_font = get_font(13)
+        self.title_font = get_ui_font(22, bold=True)
+        self.desc_font = get_ui_font(13)
+        self.label_font = get_ui_font(11, bold=True)
+        self.btn_font = get_ui_font(12, bold=True)
+        self.status_font = get_ui_font(12)
 
         self.level = 0
         self.blocks = []
         self.slots = []
-        self.drag_data = {}
+        self.dragging_block = None
+        self.drag_offset = (0, 0)
         self.locked = False
-        self._after_id = None
+        self.auto_next_timer = 0
+        self.status_text = ""
+        self.status_color = C["subtext"]
+        self.all_done = False
 
-        self._build_chrome()
+        self.reset_btn = Button(WIDTH - 200, 14, BTN_W, BTN_H, "Reset", C["red"], self.btn_font)
+        self.check_btn = Button(WIDTH - 110, 14, BTN_W, BTN_H, "Check", C["green"], self.btn_font)
+        self.next_btn = Button(WIDTH - 110, 14, BTN_W, BTN_H, "Next >>", C["blue"], self.btn_font)
+        self.next_btn.visible = False
+
         self._load_level(self.level)
 
-    def _build_chrome(self):
-        header = tk.Frame(self.root, bg=PALETTE["surface"], height=60)
-        header.pack(fill="x")
-        header.pack_propagate(False)
-
-        self.title_lbl = tk.Label(header, text="", font=TITLE_FONT,
-                                  fg=PALETTE["blue"], bg=PALETTE["surface"])
-        self.title_lbl.pack(side="left", padx=20, pady=10)
-
-        btn_frame = tk.Frame(header, bg=PALETTE["surface"])
-        btn_frame.pack(side="right", padx=16)
-
-        self.reset_btn = self._make_button(btn_frame, "Reset", PALETTE["red"],
-                                           self._on_reset)
-        self.reset_btn.pack(side="left", padx=4)
-
-        self.check_btn = self._make_button(btn_frame, "Check", PALETTE["green"],
-                                           self._on_check)
-        self.check_btn.pack(side="left", padx=4)
-
-        self.next_btn = self._make_button(btn_frame, "Next >>", PALETTE["blue"],
-                                          self._on_next)
-
-        sep = tk.Frame(self.root, bg=PALETTE["overlay"], height=1)
-        sep.pack(fill="x")
-
-        self.desc_lbl = tk.Label(self.root, text="", font=DESC_FONT,
-                                 fg=PALETTE["subtext"], bg=PALETTE["bg"],
-                                 anchor="w")
-        self.desc_lbl.pack(fill="x", padx=24, pady=(12, 0))
-
-        col_label_frame = tk.Frame(self.root, bg=PALETTE["bg"])
-        col_label_frame.pack(fill="x", padx=24, pady=(10, 0))
-        tk.Label(col_label_frame, text="DRAG FROM HERE",
-                 font=("Segoe UI", 9, "bold"), fg=PALETTE["overlay"],
-                 bg=PALETTE["bg"]).place(x=LEFT_X - 24, y=0)
-        tk.Label(col_label_frame, text="DROP IN ORDER",
-                 font=("Segoe UI", 9, "bold"), fg=PALETTE["overlay"],
-                 bg=PALETTE["bg"]).place(x=RIGHT_X - 24, y=0)
-
-        self.canvas = tk.Canvas(self.root, bg=PALETTE["bg"],
-                                highlightthickness=0)
-        self.canvas.pack(fill="both", expand=True)
-
-        self.status_bar = tk.Frame(self.root, bg=PALETTE["surface"], height=32)
-        self.status_bar.pack(fill="x", side="bottom")
-        self.status_bar.pack_propagate(False)
-
-        self.status_lbl = tk.Label(self.status_bar, text="", font=("Segoe UI", 9),
-                                   fg=PALETTE["subtext"], bg=PALETTE["surface"])
-        self.status_lbl.pack(side="left", padx=16)
-
-        self.level_lbl = tk.Label(self.status_bar, text="", font=("Segoe UI", 9),
-                                  fg=PALETTE["subtext"], bg=PALETTE["surface"])
-        self.level_lbl.pack(side="right", padx=16)
-
-    def _make_button(self, parent, text, color, cmd):
-        btn = tk.Label(parent, text=f"  {text}  ", font=BTN_FONT,
-                       fg=PALETTE["bg"], bg=color, cursor="hand2")
-        btn.bind("<Button-1>", lambda e: cmd())
-        btn.bind("<Enter>", lambda e: btn.config(bg=PALETTE["text"], fg=PALETTE["bg"]))
-        btn.bind("<Leave>", lambda e: btn.config(bg=color, fg=PALETTE["bg"]))
-        return btn
-
     def _load_level(self, idx):
-        for b in self.blocks:
-            b.destroy()
-        for s in self.slots:
-            s.destroy()
         self.blocks.clear()
         self.slots.clear()
 
         puzzle = PUZZLES[idx]
         self.correct_order = list(puzzle["lines"])
-        self.title_lbl.config(text=puzzle["title"])
-        self.desc_lbl.config(text=puzzle["desc"])
-        self.level_lbl.config(text=f"Level {idx + 1} / {len(PUZZLES)}")
-        self.status_lbl.config(text="Drag each block into a slot on the right.",
-                               fg=PALETTE["subtext"])
+        self.title_text = puzzle["title"]
+        self.desc_text = puzzle["desc"]
+        self.level_text = f"Level {idx + 1} / {len(PUZZLES)}"
+        self.status_text = "Drag each block into a slot on the right."
+        self.status_color = C["subtext"]
+        self.next_btn.visible = False
+        self.check_btn.visible = True
 
         n = len(puzzle["lines"])
 
         for i in range(n):
             sy = TOP_Y + i * (SLOT_H + SLOT_PAD)
-            slot = tk.Label(self.canvas, text=f"  {i + 1}",
-                            font=SLOT_FONT, anchor="w",
-                            width=36, height=1,
-                            bg=PALETTE["slot_bg"], fg=PALETTE["slot_border"],
-                            relief="groove", bd=1)
-            slot.place(x=RIGHT_X, y=sy)
-            slot.code = None
-            self.slots.append(slot)
+            self.slots.append(Slot(RIGHT_X, sy, i, self.slot_font))
 
         shuffled = list(puzzle["lines"])
         random.shuffle(shuffled)
@@ -205,145 +251,217 @@ class CodeDragPuzzle:
         for i, line in enumerate(shuffled):
             by = TOP_Y + i * (SLOT_H + SLOT_PAD)
             color = BLOCK_COLORS[i % len(BLOCK_COLORS)]
-            block = tk.Label(self.canvas, text=f"  {line}",
-                             font=BLOCK_FONT, anchor="w",
-                             width=36, height=1,
-                             bg=color, fg=PALETTE["bg"],
-                             relief="raised", bd=1, cursor="hand2")
-            block.place(x=LEFT_X, y=by)
-            block.code = line
-            block.home_x = LEFT_X
-            block.home_y = by
-            block.color = color
-            block.snapped_slot = None
-
-            block.bind("<Button-1>", self._on_press)
-            block.bind("<B1-Motion>", self._on_drag)
-            block.bind("<ButtonRelease-1>", self._on_release)
-            self.blocks.append(block)
-
-    def _on_press(self, event):
-        w = event.widget
-        w.lift()
-        self.drag_data = {"widget": w, "sx": event.x_root, "sy": event.y_root}
-        w.config(relief="flat", bd=2)
-        if w.snapped_slot is not None:
-            w.snapped_slot.config(bg=PALETTE["slot_bg"],
-                                  fg=PALETTE["slot_border"])
-            w.snapped_slot.code = None
-            w.snapped_slot = None
-
-    def _on_drag(self, event):
-        d = self.drag_data
-        w = d["widget"]
-        dx = event.x_root - d["sx"]
-        dy = event.y_root - d["sy"]
-        w.place(x=w.winfo_x() + dx, y=w.winfo_y() + dy)
-        d["sx"] = event.x_root
-        d["sy"] = event.y_root
-
-        for slot in self.slots:
-            if slot.code is None and self._overlap(w, slot):
-                slot.config(bg=PALETTE["overlay"])
-            elif slot.code is None:
-                slot.config(bg=PALETTE["slot_bg"])
-
-    def _on_release(self, event):
-        w = self.drag_data.get("widget")
-        if w is None:
-            return
-        w.config(relief="raised", bd=1)
-
-        placed = False
-        for slot in self.slots:
-            if slot.code is not None:
-                continue
-            if self._overlap(w, slot):
-                sx, sy = slot.winfo_x(), slot.winfo_y()
-                w.place(x=sx, y=sy)
-                slot.code = w.code
-                slot.config(bg=PALETTE["surface"], fg=PALETTE["subtext"])
-                w.snapped_slot = slot
-                placed = True
-                break
-
-        if not placed:
-            w.place(x=w.home_x, y=w.home_y)
-
-        for slot in self.slots:
-            if slot.code is None:
-                slot.config(bg=PALETTE["slot_bg"], fg=PALETTE["slot_border"])
-
-        filled = all(s.code is not None for s in self.slots)
-        self.status_lbl.config(
-            text="All slots filled — click Check!" if filled
-            else "Drag each block into a slot on the right.")
-        self.drag_data = {}
-
-    def _overlap(self, widget, target):
-        wx, wy = widget.winfo_x(), widget.winfo_y()
-        tx, ty = target.winfo_x(), target.winfo_y()
-        return abs(wx - tx) < SLOT_W * 0.4 and abs(wy - ty) < SLOT_H * 0.8
+            self.blocks.append(Block(LEFT_X, by, line, color, self.code_font))
 
     def _on_check(self):
         if self.locked:
             return
         user_order = [s.code for s in self.slots]
         if None in user_order:
-            self.status_lbl.config(text="Fill all slots first!", fg=PALETTE["yellow"])
+            self.status_text = "Fill all slots first!"
+            self.status_color = C["yellow"]
             return
 
         if user_order == self.correct_order:
             self.locked = True
-            for s in self.slots:
-                s.config(bg=PALETTE["green"], fg=PALETTE["bg"])
-            # Disable dragging on all blocks
             for b in self.blocks:
-                b.unbind("<Button-1>")
-                b.unbind("<B1-Motion>")
-                b.unbind("<ButtonRelease-1>")
-                b.config(cursor="")
+                b.enabled = False
+            for s in self.slots:
+                s.bg_color = C["green"]
+                s.border_color = C["green"]
 
             if self.level + 1 < len(PUZZLES):
-                self.status_lbl.config(
-                    text=f"✓ Correct!  Loading Level {self.level + 2} ...",
-                    fg=PALETTE["green"])
-                self._after_id = self.root.after(1200, self._go_next_level)
+                self.status_text = f"Correct!  Loading Level {self.level + 2} ..."
+                self.status_color = C["green"]
+                self.auto_next_timer = FPS * 1.2
             else:
-                self.status_lbl.config(
-                    text="🎉 Correct! You completed all levels!",
-                    fg=PALETTE["green"])
-                self._after_id = self.root.after(800, lambda: messagebox.showinfo(
-                    "Congratulations",
-                    "You've completed all puzzle levels!\nWell done! 🎉"))
+                self.status_text = "Correct! You completed all levels!"
+                self.status_color = C["green"]
+                self.all_done = True
         else:
             for i, s in enumerate(self.slots):
                 if s.code != self.correct_order[i]:
-                    s.config(bg=PALETTE["red"], fg=PALETTE["text"])
+                    s.bg_color = C["red"]
+                    s.border_color = C["red"]
                 else:
-                    s.config(bg=PALETTE["green"], fg=PALETTE["bg"])
-            self.status_lbl.config(text="Some blocks are wrong — try again.",
-                                   fg=PALETTE["red"])
-
-    def _go_next_level(self):
-        self._after_id = None
-        self.level += 1
-        self.locked = False
-        self._load_level(self.level)
-
-    def _on_next(self):
-        if self.locked and self.level + 1 < len(PUZZLES):
-            self._go_next_level()
+                    s.bg_color = C["green"]
+                    s.border_color = C["green"]
+            self.status_text = "Some blocks are wrong — try again."
+            self.status_color = C["red"]
 
     def _on_reset(self):
-        if self._after_id is not None:
-            self.root.after_cancel(self._after_id)
-            self._after_id = None
         self.locked = False
+        self.auto_next_timer = 0
+        self.all_done = False
         self._load_level(self.level)
+
+    def _go_next(self):
+        self.level += 1
+        self.locked = False
+        self.auto_next_timer = 0
+        self._load_level(self.level)
+
+    def _find_block_at(self, pos):
+        for block in reversed(self.blocks):
+            if block.contains(pos) and block.enabled:
+                return block
+        return None
+
+    def _find_snap_slot(self, block):
+        for slot in self.slots:
+            if slot.code is not None:
+                continue
+            if block.rect.colliderect(slot.rect.inflate(SLOT_W * -0.2, SLOT_H * -0.1)):
+                return slot
+        return None
+
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return False
+
+            if self.reset_btn.handle_event(event):
+                self._on_reset()
+            if self.check_btn.handle_event(event):
+                self._on_check()
+            if self.next_btn.handle_event(event):
+                if self.locked and self.level + 1 < len(PUZZLES):
+                    self._go_next()
+
+            self.reset_btn.handle_event(event)
+            self.next_btn.handle_event(event)
+            self.check_btn.handle_event(event)
+
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not self.locked:
+                block = self._find_block_at(event.pos)
+                if block:
+                    self.dragging_block = block
+                    self.drag_offset = (event.pos[0] - block.rect.x, event.pos[1] - block.rect.y)
+                    if block.snapped_slot is not None:
+                        block.snapped_slot.code = None
+                        block.snapped_slot.reset_color()
+                        block.snapped_slot = None
+                    self.blocks.remove(block)
+                    self.blocks.append(block)
+
+            elif event.type == pygame.MOUSEMOTION and self.dragging_block:
+                self.dragging_block.rect.x = event.pos[0] - self.drag_offset[0]
+                self.dragging_block.rect.y = event.pos[1] - self.drag_offset[1]
+                for slot in self.slots:
+                    if slot.code is None:
+                        if self.dragging_block.rect.colliderect(slot.rect):
+                            slot.bg_color = C["overlay"]
+                        else:
+                            slot.reset_color()
+
+            elif event.type == pygame.MOUSEBUTTONUP and event.button == 1 and self.dragging_block:
+                block = self.dragging_block
+                self.dragging_block = None
+                snap = self._find_snap_slot(block)
+                if snap:
+                    block.rect.x = snap.rect.x
+                    block.rect.y = snap.rect.y
+                    snap.code = block.code
+                    snap.bg_color = hex_to_rgb("#D0E8D0")
+                    snap.border_color = C["green"]
+                    block.snapped_slot = snap
+                else:
+                    block.go_home()
+
+                for slot in self.slots:
+                    if slot.code is None:
+                        slot.reset_color()
+
+                filled = all(s.code is not None for s in self.slots)
+                if filled:
+                    self.status_text = "All slots filled — click Check!"
+                    self.status_color = C["subtext"]
+                else:
+                    self.status_text = "Drag each block into a slot on the right."
+                    self.status_color = C["subtext"]
+
+        return True
+
+    def update(self):
+        if self.auto_next_timer > 0:
+            self.auto_next_timer -= 1
+            if self.auto_next_timer <= 0:
+                self._go_next()
+
+    def draw(self):
+        self.screen.fill(C["bg"])
+
+        pygame.draw.rect(self.screen, C["surface"], (0, 0, WIDTH, HEADER_H))
+        pygame.draw.line(self.screen, C["overlay"], (0, HEADER_H), (WIDTH, HEADER_H), 1)
+
+        title_surf = self.title_font.render(self.title_text, True, C["blue"])
+        self.screen.blit(title_surf, (20, (HEADER_H - title_surf.get_height()) // 2))
+
+        self.reset_btn.draw(self.screen)
+        self.check_btn.draw(self.screen)
+        self.next_btn.draw(self.screen)
+
+        desc_surf = self.desc_font.render(self.desc_text, True, C["subtext"])
+        self.screen.blit(desc_surf, (24, HEADER_H + 14))
+
+        col1_surf = self.label_font.render("DRAG FROM HERE", True, C["slot_border"])
+        self.screen.blit(col1_surf, (LEFT_X, TOP_Y - 24))
+        col2_surf = self.label_font.render("DROP IN ORDER", True, C["slot_border"])
+        self.screen.blit(col2_surf, (RIGHT_X, TOP_Y - 24))
+
+        for slot in self.slots:
+            slot.draw(self.screen)
+
+        for block in self.blocks:
+            block.draw(self.screen)
+
+        pygame.draw.rect(self.screen, C["surface"], (0, HEIGHT - 34, WIDTH, 34))
+        pygame.draw.line(self.screen, C["overlay"], (0, HEIGHT - 34), (WIDTH, HEIGHT - 34), 1)
+
+        status_surf = self.status_font.render(self.status_text, True, self.status_color)
+        self.screen.blit(status_surf, (16, HEIGHT - 28))
+
+        level_surf = self.status_font.render(self.level_text, True, C["subtext"])
+        self.screen.blit(level_surf, (WIDTH - level_surf.get_width() - 16, HEIGHT - 28))
+
+        if self.all_done:
+            overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 120))
+            self.screen.blit(overlay, (0, 0))
+
+            box_w, box_h = 420, 140
+            box_x = (WIDTH - box_w) // 2
+            box_y = (HEIGHT - box_h) // 2
+            pygame.draw.rect(self.screen, C["white"], (box_x, box_y, box_w, box_h), border_radius=10)
+            pygame.draw.rect(self.screen, C["green"], (box_x, box_y, box_w, box_h), 3, border_radius=10)
+
+            congrats_font = get_ui_font(20, bold=True)
+            msg_font = get_ui_font(14)
+
+            t1 = congrats_font.render("Congratulations!", True, C["green"])
+            t2 = msg_font.render("You've completed all puzzle levels!", True, C["text"])
+            t3 = msg_font.render("Well done!", True, C["text"])
+
+            self.screen.blit(t1, (box_x + (box_w - t1.get_width()) // 2, box_y + 24))
+            self.screen.blit(t2, (box_x + (box_w - t2.get_width()) // 2, box_y + 64))
+            self.screen.blit(t3, (box_x + (box_w - t3.get_width()) // 2, box_y + 96))
+
+        if self.locked and not self.all_done and self.auto_next_timer <= 0:
+            self.next_btn.visible = True
+            self.check_btn.visible = False
+
+        pygame.display.flip()
+
+    def run(self):
+        running = True
+        while running:
+            self.clock.tick(FPS)
+            running = self.handle_events()
+            self.update()
+            self.draw()
+        pygame.quit()
 
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    CodeDragPuzzle(root)
-    root.mainloop()
+    game = CodeDragPuzzle()
+    game.run()

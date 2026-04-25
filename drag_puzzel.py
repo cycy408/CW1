@@ -98,7 +98,7 @@ BLOCK_COLORS = [C[k] for k in BLOCK_COLORS_KEYS]
 
 
 def get_font(size, bold=False):
-    for name in ["consolas", "couriernew", "monospace"]:
+    for name in ["segoeui", "arial", "helvetica"]:
         try:
             return pygame.font.SysFont(name, size, bold=bold)
         except Exception:

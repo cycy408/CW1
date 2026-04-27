@@ -10,6 +10,10 @@
       "Python Basics - Level 4",
       "Python Basics - Level 5",
       "Python Basics - Level 6"
-    ]
+    ],
+    "spaceship": {
+      "level": 3,
+      "total_damage": 110
+    }
   }
 }

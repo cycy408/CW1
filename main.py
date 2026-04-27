@@ -270,7 +270,7 @@ if __name__ == "__main__":
             proc.wait()
         elif selector.choice == "spaceship":
             proc = subprocess.Popen(
-                [sys.executable, os.path.join(os.path.dirname(__file__), "spaceship_game.py")],
+                [sys.executable, os.path.join(os.path.dirname(__file__), "spaceship_game.py"), app.current_user],
             )
             proc.wait()
         else:

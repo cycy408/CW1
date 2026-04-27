@@ -44,10 +44,26 @@ class DataManager:
             return Player.from_dict(data[username])
         return Player(username)
 
-    # 保存玩家（OOP）
     def save_player(self, player):
         with open(self.progress_file, "r") as f:
             data = json.load(f)
-        data[player.username] = player.to_dict()
+        if player.username not in data:
+            data[player.username] = {}
+        data[player.username].update(player.to_dict())
+        with open(self.progress_file, "w") as f:
+            json.dump(data, f, indent=2)
+
+    def load_spaceship_progress(self, username):
+        with open(self.progress_file, "r") as f:
+            data = json.load(f)
+        user_data = data.get(username, {})
+        return user_data.get("spaceship", {"level": 1, "total_damage": 0})
+
+    def save_spaceship_progress(self, username, spaceship_data):
+        with open(self.progress_file, "r") as f:
+            data = json.load(f)
+        if username not in data:
+            data[username] = {}
+        data[username]["spaceship"] = spaceship_data
         with open(self.progress_file, "w") as f:
             json.dump(data, f, indent=2)

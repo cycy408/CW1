@@ -9,7 +9,8 @@
       "Bash(python -c ' *)",
       "Bash(python -c \"import pygame; print\\(pygame.ver\\)\")",
       "Bash(timeout 5 python drag_puzzel.py)",
-      "Bash(python -c \"import py_compile; py_compile.compile\\('main.py', doraise=True\\); print\\('OK'\\)\")"
+      "Bash(python -c \"import py_compile; py_compile.compile\\('main.py', doraise=True\\); print\\('OK'\\)\")",
+      "Bash(python -c \"import py_compile; py_compile.compile\\('game.py', doraise=True\\); print\\('OK'\\)\")"
     ]
   }
 }

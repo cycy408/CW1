@@ -180,12 +180,12 @@ class GameSelectUI:
         self.choice = None
 
         self.root.title("Select Game — INT101")
-        self.root.geometry("520x420")
+        self.root.geometry("520x560")
         self.root.resizable(False, False)
         self.root.configure(fg_color="#f0f4ff")
 
         card = ctk.CTkFrame(
-            root, width=420, height=350, corner_radius=20,
+            root, width=420, height=490, corner_radius=20,
             fg_color="white", border_width=1, border_color="#e0e6f0",
         )
         card.place(relx=0.5, rely=0.5, anchor="center")
@@ -228,6 +228,19 @@ class GameSelectUI:
         ctk.CTkLabel(
             btn_area, text="Drag and drop code blocks into the correct order",
             font=("Segoe UI", 11), text_color="#8892a6",
+        ).pack(pady=(0, 18))
+
+        spaceship_btn = ctk.CTkButton(
+            btn_area, text="Spaceship Battle",
+            font=("Segoe UI", 15, "bold"), height=60, corner_radius=14,
+            fg_color="#E05297", hover_color="#c4437f",
+            command=lambda: self._select("spaceship"),
+        )
+        spaceship_btn.pack(fill="x", pady=(0, 10))
+
+        ctk.CTkLabel(
+            btn_area, text="Answer questions to defeat the Boss spaceship",
+            font=("Segoe UI", 11), text_color="#8892a6",
         ).pack(pady=(0, 10))
 
     def _select(self, choice):
@@ -253,6 +266,11 @@ if __name__ == "__main__":
         elif selector.choice == "puzzle":
             proc = subprocess.Popen(
                 [sys.executable, os.path.join(os.path.dirname(__file__), "drag_puzzel.py")],
+            )
+            proc.wait()
+        elif selector.choice == "spaceship":
+            proc = subprocess.Popen(
+                [sys.executable, os.path.join(os.path.dirname(__file__), "spaceship_game.py")],
             )
             proc.wait()
         else:

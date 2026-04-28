@@ -15,5 +15,11 @@
       "level": 3,
       "total_damage": 110
     }
+  },
+  "wzq": {
+    "spaceship": {
+      "level": 3,
+      "total_damage": 114
+    }
   }
 }

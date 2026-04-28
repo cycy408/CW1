@@ -20,6 +20,19 @@
     "spaceship": {
       "level": 3,
       "total_damage": 114
+    },
+    "drag_puzzle": {
+      "basic_syntax": 1
+    }
+  },
+  "Guest": {
+    "spaceship": {
+      "level": 2,
+      "total_damage": 52
+    },
+    "drag_puzzle": {
+      "basic_syntax": 5,
+      "control_structure": 2
     }
   }
 }

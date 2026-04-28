@@ -356,7 +356,7 @@ class Block:
         self.rect = pygame.Rect(x, y, SLOT_W, SLOT_H)
         self.code = code
         self.color = color
-        self.font = font
+        self.font = pygame.font.SysFont("consolas", 14)
         self.home_x = x
         self.home_y = y
         self.snapped_slot = None

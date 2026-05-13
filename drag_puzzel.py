@@ -17,7 +17,7 @@ PALETTE = {
     "subtext":      "#757575",
     "blue":         "#42A5F5",
     "green":        "#66BB6A",
-    "red":          "#EF5350",
+    "red":          "#EF4744",
     "yellow":       "#FFA726",
     "mauve":        "#AB47BC",
     "teal":         "#26A69A",

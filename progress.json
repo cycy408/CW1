@@ -34,5 +34,13 @@
       "basic_syntax": 5,
       "control_structure": 4
     }
+  },
+  "7k7k": {
+    "username": "7k7k",
+    "score": 0,
+    "level": 2,
+    "mastered_topics": [
+      "Python Basics - Level 1"
+    ]
   }
 }

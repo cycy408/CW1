@@ -1,7 +1,7 @@
 import json
 import os
 from game_class import Player
-
+# data manager handles all file operations for user data and progress
 class DataManager:
     def __init__(self):
         self.user_file = "users.json"
@@ -36,7 +36,7 @@ class DataManager:
         with open(self.progress_file, "w") as f:
             json.dump(data, f, indent=2)
 
-    # 加载玩家（OOP）
+    # upload the player data (OOP)
     def load_player(self, username):
         with open(self.progress_file, "r") as f:
             data = json.load(f)

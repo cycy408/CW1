@@ -34,7 +34,7 @@ BLOCK_COLORS_KEYS = ["blue", "mauve", "teal", "peach", "yellow", "green"]
 
 USERNAME = sys.argv[1] if len(sys.argv) > 1 else "Guest"
 PROGRESS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "progress.json")
-
+# each module has 5 puzzles, each puzzle has a title, description, and 5 lines of code in correct order
 MODULES = [
     {
         "key": "basic_syntax",
@@ -268,7 +268,7 @@ MODULES = [
         ],
     },
 ]
-
+# UI layout constants
 SLOT_W = 340
 SLOT_H = 36
 SLOT_PAD = 5

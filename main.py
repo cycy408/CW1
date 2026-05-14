@@ -265,7 +265,7 @@ if __name__ == "__main__":
             game.run()
         elif selector.choice == "puzzle":
             proc = subprocess.Popen(
-                [sys.executable, os.path.join(os.path.dirname(__file__), "drag_puzzel.py")],
+                [sys.executable, os.path.join(os.path.dirname(__file__), "drag_puzzel.py"), app.current_user],
             )
             proc.wait()
         elif selector.choice == "spaceship":

@@ -1,34 +1,34 @@
-# OOP 核心类：Player + Level + QuestionBank + GameUI
+# OOP ：Player + Level + QuestionBank + GameUI
 import customtkinter as ctk
 from tkinter import messagebox
 import random
 
 
 # ============================================================
-#  Player — 玩家数据
+#  Player — data class for player information and progress
 # ============================================================
 class Player:
     def __init__(self, username):
-        self.username = username       # 用户名
-        self.score = 0                 # 当前积分
-        self.level = 1                 # 当前关卡
-        self.mastered_topics = []      # 已掌握知识点
+        self.username = username       # name
+        self.score = 0                 # score
+        self.level = 1                 # level
+        self.mastered_topics = []      # mastered topics
 
-    # 增加分数
+    # add score to current score
     def add_score(self, points):
         self.score += points
 
-    # 升级
+    # level up the player
     def level_up(self):
         self.level += 1
-        self.score = 0  # 升级后清空分数
+        self.score = 0  # reset score on level up
 
-    # 记录掌握的知识点
+    # record mastered topics
     def add_topic(self, topic):
         if topic not in self.mastered_topics:
             self.mastered_topics.append(topic)
 
-    # 转为字典（用于保存文件）
+    # convert to dict (for saving to file)
     def to_dict(self):
         return {
             "username": self.username,
@@ -37,7 +37,7 @@ class Player:
             "mastered_topics": self.mastered_topics
         }
 
-    # 从字典加载玩家数据
+    # create Player object from dict (for loading from file)
     @staticmethod
     def from_dict(data):
         player = Player(data["username"])
@@ -48,17 +48,17 @@ class Player:
 
 
 # ============================================================
-#  Level — 关卡信息
+#  Level — data class for each level's information and logic
 # ============================================================
 class Level:
     def __init__(self, level_num):
-        self.level_num = level_num    # 关卡编号
-        self.difficulty = self.get_difficulty()  # 难度
-        self.pass_score = self.get_pass_score()  # 通关需要积分
-        self.questions = []           # 该关卡所有题目
-        self.topic = f"Python Basics - Level {level_num}"  # 知识点
+        self.level_num = level_num    
+        self.difficulty = self.get_difficulty()  
+        self.pass_score = self.get_pass_score() 
+        self.questions = []         
+        self.topic = f"Python Basics - Level {level_num}"  
 
-    # 自动设置难度
+    # set difficulty based on level number
     def get_difficulty(self):
         if self.level_num <= 2:
             return "Easy"
@@ -67,32 +67,31 @@ class Level:
         else:
             return "Hard"
 
-    # 自动设置通关积分
+    # set pass score 
     def get_pass_score(self):
         return 40
 
-    # 判断玩家是否通关
+    # check if player passed the level
     def is_passed(self, player_score):
         return player_score >= self.pass_score
 
-    # 获取关卡描述
     def get_info(self):
         return (f"Level {self.level_num} | Difficulty: {self.difficulty} "
                 f"| Pass Score: {self.pass_score}")
 
 
 # ============================================================
-#  QuestionBank — 题库
+#  QuestionBank — static class to store all questions for each level
 # ============================================================
 class QuestionBank:
-    """存储所有关卡的题目，每道题是一个字典：
+    """store all questions for each level:
        {"question": str, "options": [A, B, C, D], "answer": int}
-       answer 是正确选项的下标 (0-3)
+       answer is the index of the correct option (0-3)
     """
 
     @staticmethod
     def get_questions(level_num):
-        """根据关卡编号返回该关卡的题目列表"""
+        """base on level number, return a list of questions for that level"""
         bank = {
             # -------- Level 1: Variables & Data Types --------
             1: [
@@ -295,32 +294,31 @@ class QuestionBank:
 
 
 # ============================================================
-#  GameUI — 游戏主界面 (customtkinter)
+#  GameUI — custom tkinter
 # ============================================================
 class GameUI:
-    MAX_LEVEL = 6  # 最大关卡数
+    MAX_LEVEL = 6  # max level number
 
     def __init__(self, player, data_manager):
         """
-        player       : Player 对象 (从 DataManager 加载)
-        data_manager : DataManager 对象 (用于保存进度)
+        player       : Player object (loaded from DataManager)
+        data_manager : DataManager object (for saving progress)
         """
         self.player = player
         self.dm = data_manager
-        self.current_level = None      # Level 对象
-        self.questions = []            # 当前关卡的题目列表
-        self.q_index = 0              # 当前题目下标
+        self.current_level = None      
+        self.questions = []           
+        self.q_index = 0              
 
-        # ---------- 窗口 ----------
+        # ---------- GUI ----------
         self.root = ctk.CTk()
-        self.selected = ctk.IntVar(value=-1)  # 选中的选项
+        self.selected = ctk.IntVar(value=-1)  # selected option
         self.root.title(f"Python Learning Game - {player.username}")
         self.root.geometry("620x540")
         self.root.resizable(False, False)
         self.root.configure(fg_color="#f0f4ff")
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
-        # ---------- 顶部信息栏 ----------
         top_bar = ctk.CTkFrame(self.root, fg_color="white",
                                corner_radius=14, height=60,
                                border_width=1, border_color="#e0e6f0")
@@ -342,7 +340,7 @@ class GameUI:
             font=("Segoe UI", 13), text_color="#3a3f55")
         self.lbl_level.pack(side="right", padx=18)
 
-        # ---------- 题目区域（卡片） ----------
+        # ---------- area of question ----------
         self.card = ctk.CTkFrame(self.root, fg_color="white",
                                  corner_radius=18,
                                  border_width=1, border_color="#e0e6f0")
@@ -358,7 +356,7 @@ class GameUI:
             text_color="#1a1a2e", wraplength=520, justify="left")
         self.lbl_question.pack(anchor="w", padx=28, pady=(0, 14))
 
-        # 四个选项（radiobutton）
+        # four options (radiobutton)
         self.option_frame = ctk.CTkFrame(self.card, fg_color="transparent")
         self.option_frame.pack(fill="x", padx=28)
 
@@ -372,7 +370,7 @@ class GameUI:
             rb.pack(anchor="w", pady=5)
             self.radio_buttons.append(rb)
 
-        # ---------- 底部按钮栏 ----------
+        # ---------- bottom button bar ----------
         btn_bar = ctk.CTkFrame(self.root, fg_color="transparent")
         btn_bar.pack(fill="x", padx=20, pady=(0, 16))
 
@@ -391,18 +389,18 @@ class GameUI:
             command=self.on_close)
         self.btn_quit.pack(side="right", expand=True, fill="x", padx=(6, 0))
 
-        # ---------- 反馈标签（答题结果） ----------
+        # ---------- feedback label (answer result) ----------
         self.lbl_feedback = ctk.CTkLabel(
             self.card, text="", font=("Segoe UI", 13, "bold"),
             text_color="#27ae60")
         self.lbl_feedback.pack(pady=(8, 4))
 
-        # ---------- 启动第一关 ----------
+        # ---------- start first level ----------
         self.start_level(self.player.level)
 
-    # -------------------- 关卡控制 --------------------
+    # -------------------- level control --------------------
     def start_level(self, level_num):
-        """加载指定关卡"""
+        """load specified level"""
         if level_num > self.MAX_LEVEL:
             self.show_victory()
             return
@@ -414,7 +412,7 @@ class GameUI:
         self.show_question()
 
     def update_header(self):
-        """刷新顶部信息"""
+        """update header information"""
         lvl = self.current_level
         self.lbl_level.configure(
             text=f"Level {lvl.level_num} ({lvl.difficulty})"
@@ -422,7 +420,7 @@ class GameUI:
         self.lbl_score.configure(text=f"Score: {self.player.score}")
 
     def show_question(self):
-        """显示当前题目"""
+        """show current question and options"""
         self.selected.set(-1)
         self.lbl_feedback.configure(text="")
         self.btn_submit.configure(text="Submit Answer",
@@ -437,9 +435,9 @@ class GameUI:
         for i, rb in enumerate(self.radio_buttons):
             rb.configure(text=q["options"][i], state="normal")
 
-    # -------------------- 答题逻辑 --------------------
+    # -------------------- answer logic --------------------
     def submit_answer(self):
-        """提交答案"""
+        """submit answer"""
         sel = self.selected.get()
         if sel == -1:
             messagebox.showwarning("Notice", "Please select an answer!")
@@ -448,7 +446,7 @@ class GameUI:
         q = self.questions[self.q_index]
         correct = q["answer"]
 
-        # 禁用选项防止重复提交
+        # disable options to prevent resubmission
         for rb in self.radio_buttons:
             rb.configure(state="disabled")
 
@@ -465,7 +463,7 @@ class GameUI:
                 text=f"Wrong! The answer is: {correct_text}",
                 text_color="#e74c3c")
 
-        # 切换按钮为 "Next"
+        # switch button to "Next"
         if self.q_index + 1 < len(self.questions):
             self.btn_submit.configure(text="Next Question",
                                       command=self.next_question,
@@ -476,13 +474,13 @@ class GameUI:
                                       fg_color="#f39c12")
 
     def next_question(self):
-        """切换到下一题"""
+        """ move to next question in current level"""
         self.q_index += 1
         self.show_question()
 
-    # -------------------- 关卡结算 --------------------
+    # -------------------- level conclusion --------------------
     def finish_level(self):
-        """关卡结束，判断是否通关"""
+        """level conclusion, determine if passed"""
         lvl = self.current_level
         passed = lvl.is_passed(self.player.score)
 
@@ -490,7 +488,7 @@ class GameUI:
             self.player.add_topic(lvl.topic)
 
             if self.player.level >= self.MAX_LEVEL:
-                # 所有关卡通关
+                # all levels passed, show victory screen
                 self.save_progress()
                 self.show_victory()
                 return
@@ -516,8 +514,7 @@ class GameUI:
                 self.root.destroy()
 
     def show_victory(self):
-        """所有关卡通关"""
-        # 清空卡片内容
+        # Clear card content
         for w in self.card.winfo_children():
             w.destroy()
 
@@ -547,17 +544,17 @@ class GameUI:
 
         self.btn_submit.configure(state="disabled")
 
-    # -------------------- 存档 / 退出 --------------------
+    # -------------------- save / exit --------------------
     def save_progress(self):
-        """保存当前进度"""
+        """save current progress"""
         self.dm.save_player(self.player)
 
     def on_close(self):
-        """退出前保存"""
+        """save before exit"""
         self.save_progress()
         messagebox.showinfo("Saved", "Your progress has been saved!")
         self.root.destroy()
 
     def run(self):
-        """启动主循环"""
+        """start main loop"""
         self.root.mainloop()

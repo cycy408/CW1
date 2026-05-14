@@ -315,6 +315,7 @@ class Game:
         saved = self.dm.load_spaceship_progress(username)
         self.current_level = saved.get("level", 1)
         self.total_damage_all = saved.get("total_damage", 0)
+        self.completed_levels = saved.get("completed_levels", [])
 
         self.all_sprites = pygame.sprite.Group()
         self.projectiles = pygame.sprite.Group()
@@ -336,8 +337,10 @@ class Game:
         self.quiz_cooldown = 0
         self.particles = []
 
-        # intro / playing / level_complete / victory
-        self.state = "intro"
+        # level_select / intro / playing / level_complete / victory
+        self.state = "level_select"
+        self.selected_level = min(self.current_level - 1, TOTAL_LEVELS - 1)
+        self.level_select_hovered = -1
 
         self.stars = []
         for _ in range(60):
@@ -550,7 +553,9 @@ class Game:
 
         if self.boss.hp <= 0:
             self.total_damage_all += self.total_damage
-            if self.current_level >= TOTAL_LEVELS:
+            if self.current_level not in self.completed_levels:
+                self.completed_levels.append(self.current_level)
+            if len(self.completed_levels) >= TOTAL_LEVELS:
                 self.state = "victory"
             else:
                 self.state = "level_complete"
@@ -561,6 +566,7 @@ class Game:
         self.dm.save_spaceship_progress(self.username, {
             "level": next_level,
             "total_damage": self.total_damage_all,
+            "completed_levels": self.completed_levels,
         })
 
     def draw_question(self):
@@ -666,13 +672,12 @@ class Game:
         dmg = self.font.render(f"Damage dealt: {self.total_damage}", True, CYAN)
         screen.blit(dmg, (SCREEN_WIDTH // 2 - dmg.get_width() // 2, SCREEN_HEIGHT // 2 + 40))
 
-        next_mod = MODULES[self.current_level] if self.current_level < TOTAL_LEVELS else None
-        if next_mod:
-            nxt = self.small_font.render(f"Next: Level {self.current_level + 1} - {next_mod['name']}", True, TEXT_DIM)
-            screen.blit(nxt, (SCREEN_WIDTH // 2 - nxt.get_width() // 2, SCREEN_HEIGHT // 2 + 85))
+        cleared = len(self.completed_levels)
+        prog = self.small_font.render(f"Missions Cleared: {cleared} / {TOTAL_LEVELS}", True, TEXT_DIM)
+        screen.blit(prog, (SCREEN_WIDTH // 2 - prog.get_width() // 2, SCREEN_HEIGHT // 2 + 85))
 
         pulse = int(120 + 60 * math.sin(self.tick * 0.08))
-        hint = self.small_font.render("[  SPACE  ]  Continue", True, TEXT_DIM)
+        hint = self.small_font.render("[  SPACE  ]  Mission Select", True, TEXT_DIM)
         hint.set_alpha(pulse)
         screen.blit(hint, (SCREEN_WIDTH // 2 - hint.get_width() // 2, SCREEN_HEIGHT // 2 + 130))
 
@@ -680,6 +685,86 @@ class Game:
             px = SCREEN_WIDTH // 2 + random.randint(-150, 150)
             py_r = SCREEN_HEIGHT // 2 + random.randint(-40, 40)
             self.spawn_particles(px, py_r, random.choice([GREEN, CYAN, ACCENT_LIGHT]), 2)
+
+    def _get_level_select_rects(self):
+        rects = []
+        row_h = 54
+        gap = 6
+        row_w = 620
+        row_x = (SCREEN_WIDTH - row_w) // 2
+        start_y = 155
+        for i in range(TOTAL_LEVELS):
+            y = start_y + i * (row_h + gap)
+            rects.append(pygame.Rect(row_x, y, row_w, row_h))
+        return rects
+
+    def draw_level_select(self):
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 160))
+        screen.blit(overlay, (0, 0))
+
+        title = self.title_font.render("MISSION SELECT", True, ACCENT_LIGHT)
+        screen.blit(title, (SCREEN_WIDTH // 2 - title.get_width() // 2, 30))
+
+        user_txt = self.small_font.render(f"Pilot: {self.username}", True, TEXT_DIM)
+        screen.blit(user_txt, (SCREEN_WIDTH // 2 - user_txt.get_width() // 2, 105))
+
+        sep = pygame.Surface((400, 2), pygame.SRCALPHA)
+        sep.fill((*ACCENT, 60))
+        screen.blit(sep, (SCREEN_WIDTH // 2 - 200, 135))
+
+        rects = self._get_level_select_rects()
+        for i, module in enumerate(MODULES):
+            r = rects[i]
+            is_sel = (i == self.selected_level)
+            is_hov = (i == self.level_select_hovered)
+            completed = (i + 1) in self.completed_levels
+
+            bg = (*OPTION_HOVER, 220) if (is_sel or is_hov) else (*OPTION_BG, 180)
+            surf = pygame.Surface((r.w, r.h), pygame.SRCALPHA)
+            pygame.draw.rect(surf, bg, (0, 0, r.w, r.h), border_radius=8)
+            screen.blit(surf, r.topleft)
+
+            if is_sel:
+                pygame.draw.rect(screen, ACCENT_LIGHT, r, 2, border_radius=8)
+                pygame.draw.rect(screen, ACCENT_LIGHT,
+                                 (r.x, r.y + 12, 3, 30), border_radius=2)
+
+            num_color = ACCENT_LIGHT if is_sel else TEXT_DIM
+            num = self.font.render(f"Lv.{i + 1}", True, num_color)
+            screen.blit(num, (r.x + 20,
+                              r.y + (r.h - num.get_height()) // 2))
+
+            name_color = WHITE if (is_sel or is_hov) else (160, 165, 180)
+            name = self.font.render(module["name"], True, name_color)
+            screen.blit(name, (r.x + 130,
+                               r.y + (r.h - name.get_height()) // 2))
+
+            if completed:
+                status = self.small_font.render("CLEARED", True, GREEN)
+            else:
+                status = self.small_font.render("---", True, TEXT_DIM)
+            screen.blit(status, (r.x + r.w - status.get_width() - 24,
+                                 r.y + (r.h - status.get_height()) // 2))
+
+        last_y = rects[-1].bottom + 16
+        cleared_count = len(self.completed_levels)
+        prog = self.small_font.render(
+            f"Missions Cleared: {cleared_count} / {TOTAL_LEVELS}", True, TEXT_DIM)
+        screen.blit(prog, (SCREEN_WIDTH // 2 - prog.get_width() // 2, last_y))
+
+        dmg_txt = self.small_font.render(
+            f"Total Damage: {self.total_damage_all}", True, CYAN)
+        screen.blit(dmg_txt, (SCREEN_WIDTH // 2 - dmg_txt.get_width() // 2,
+                              last_y + 30))
+
+        pulse = int(120 + 60 * math.sin(self.tick * 0.08))
+        hint = self.small_font.render(
+            "Up / Down  to select     SPACE  to start     ESC  to quit",
+            True, TEXT_DIM)
+        hint.set_alpha(pulse)
+        screen.blit(hint, (SCREEN_WIDTH // 2 - hint.get_width() // 2,
+                           SCREEN_HEIGHT - 36))
 
     def draw_victory(self):
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
@@ -705,7 +790,7 @@ class Game:
         screen.blit(dmg, (SCREEN_WIDTH // 2 - dmg.get_width() // 2, SCREEN_HEIGHT // 2 + 50))
 
         pulse = int(120 + 60 * math.sin(self.tick * 0.08))
-        restart = self.small_font.render("[ R ] Restart     [ ESC ] Quit", True, TEXT_DIM)
+        restart = self.small_font.render("[ R ] Restart   [ L ] Missions   [ ESC ] Quit", True, TEXT_DIM)
         restart.set_alpha(pulse)
         screen.blit(restart, (SCREEN_WIDTH // 2 - restart.get_width() // 2, SCREEN_HEIGHT // 2 + 100))
 
@@ -718,9 +803,13 @@ class Game:
     def full_reset(self):
         self.current_level = 1
         self.total_damage_all = 0
-        self.dm.save_spaceship_progress(self.username, {"level": 1, "total_damage": 0})
+        self.completed_levels = []
+        self.selected_level = 0
+        self.dm.save_spaceship_progress(self.username, {
+            "level": 1, "total_damage": 0, "completed_levels": []
+        })
         self.setup_level()
-        self.state = "intro"
+        self.state = "level_select"
 
     def run(self):
         running = True
@@ -733,12 +822,43 @@ class Game:
                     running = False
                     break
 
+                # --- level_select: mouse ---
+                if self.state == "level_select":
+                    if event.type == pygame.MOUSEMOTION:
+                        self.level_select_hovered = -1
+                        for i, r in enumerate(self._get_level_select_rects()):
+                            if r.collidepoint(event.pos):
+                                self.level_select_hovered = i
+                                break
+                    if (event.type == pygame.MOUSEBUTTONDOWN
+                            and event.button == 1):
+                        for i, r in enumerate(self._get_level_select_rects()):
+                            if r.collidepoint(event.pos):
+                                self.current_level = i + 1
+                                self.selected_level = i
+                                self.state = "intro"
+                                break
+
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
+                        if self.state in ("playing", "intro"):
+                            self.state = "level_select"
+                            continue
                         running = False
                         break
 
-                    if self.state == "intro":
+                    if self.state == "level_select":
+                        if event.key == pygame.K_UP:
+                            self.selected_level = (
+                                (self.selected_level - 1) % TOTAL_LEVELS)
+                        elif event.key == pygame.K_DOWN:
+                            self.selected_level = (
+                                (self.selected_level + 1) % TOTAL_LEVELS)
+                        elif event.key in (pygame.K_SPACE, pygame.K_RETURN):
+                            self.current_level = self.selected_level + 1
+                            self.state = "intro"
+
+                    elif self.state == "intro":
                         if event.key == pygame.K_SPACE:
                             self.setup_level()
                             self.state = "playing"
@@ -757,12 +877,15 @@ class Game:
 
                     elif self.state == "level_complete":
                         if event.key == pygame.K_SPACE:
-                            self.current_level += 1
-                            self.state = "intro"
+                            self.selected_level = min(
+                                self.current_level, TOTAL_LEVELS - 1)
+                            self.state = "level_select"
 
                     elif self.state == "victory":
                         if event.key == pygame.K_r:
                             self.full_reset()
+                        elif event.key == pygame.K_l:
+                            self.state = "level_select"
 
             if not running:
                 break
@@ -796,6 +919,8 @@ class Game:
                 self.draw_level_complete()
             elif self.state == "victory":
                 self.draw_victory()
+            elif self.state == "level_select":
+                self.draw_level_select()
 
             pygame.display.flip()
 

@@ -13,6 +13,7 @@ class Player:
         self.score = 0                 # score
         self.level = 1                 # level
         self.mastered_topics = []      # mastered topics
+        self.completed_levels = []     # completed level numbers
 
     # add score to current score
     def add_score(self, points):
@@ -28,13 +29,19 @@ class Player:
         if topic not in self.mastered_topics:
             self.mastered_topics.append(topic)
 
+    # record completed level
+    def complete_level(self, level_num):
+        if level_num not in self.completed_levels:
+            self.completed_levels.append(level_num)
+
     # convert to dict (for saving to file)
     def to_dict(self):
         return {
             "username": self.username,
             "score": self.score,
             "level": self.level,
-            "mastered_topics": self.mastered_topics
+            "mastered_topics": self.mastered_topics,
+            "completed_levels": self.completed_levels
         }
 
     # create Player object from dict (for loading from file)
@@ -44,6 +51,7 @@ class Player:
         player.score = data["score"]
         player.level = data["level"]
         player.mastered_topics = data["mastered_topics"]
+        player.completed_levels = data.get("completed_levels", [])
         return player
 
 
@@ -293,6 +301,22 @@ class QuestionBank:
         return questions
 
 
+LEVEL_TOPICS = {
+    1: "Variables & Data Types",
+    2: "Strings & Operations",
+    3: "Lists & Tuples",
+    4: "Conditionals & Loops",
+    5: "Functions",
+    6: "Dictionaries & File I/O",
+}
+
+LEVEL_COLORS = {
+    "Easy": "#27ae60",
+    "Medium": "#f39c12",
+    "Hard": "#e74c3c",
+}
+
+
 # ============================================================
 #  GameUI — custom tkinter
 # ============================================================
@@ -346,30 +370,6 @@ class GameUI:
                                  border_width=1, border_color="#e0e6f0")
         self.card.pack(fill="both", expand=True, padx=20, pady=16)
 
-        self.lbl_qnum = ctk.CTkLabel(
-            self.card, text="", font=("Segoe UI", 12),
-            text_color="#8892a6")
-        self.lbl_qnum.pack(anchor="w", padx=28, pady=(20, 4))
-
-        self.lbl_question = ctk.CTkLabel(
-            self.card, text="", font=("Segoe UI", 15, "bold"),
-            text_color="#1a1a2e", wraplength=520, justify="left")
-        self.lbl_question.pack(anchor="w", padx=28, pady=(0, 14))
-
-        # four options (radiobutton)
-        self.option_frame = ctk.CTkFrame(self.card, fg_color="transparent")
-        self.option_frame.pack(fill="x", padx=28)
-
-        self.radio_buttons = []
-        for i in range(4):
-            rb = ctk.CTkRadioButton(
-                self.option_frame, text="", variable=self.selected,
-                value=i, font=("Segoe UI", 13), text_color="#3a3f55",
-                fg_color="#4a6cf7", hover_color="#dce3fc",
-                border_color="#b0b8d0")
-            rb.pack(anchor="w", pady=5)
-            self.radio_buttons.append(rb)
-
         # ---------- bottom button bar ----------
         btn_bar = ctk.CTkFrame(self.root, fg_color="transparent")
         btn_bar.pack(fill="x", padx=20, pady=(0, 16))
@@ -389,14 +389,101 @@ class GameUI:
             command=self.on_close)
         self.btn_quit.pack(side="right", expand=True, fill="x", padx=(6, 0))
 
-        # ---------- feedback label (answer result) ----------
+        # ---------- show level selection ----------
+        self.show_level_select()
+
+    # -------------------- level selection --------------------
+    def show_level_select(self):
+        for w in self.card.winfo_children():
+            w.destroy()
+
+        self.btn_submit.configure(
+            state="disabled", text="Select a Level",
+            fg_color="#a0a8c0", hover_color="#a0a8c0")
+
+        completed_count = len(self.player.completed_levels)
+        self.lbl_level.configure(
+            text=f"Completed: {completed_count}/{self.MAX_LEVEL}")
+        self.lbl_score.configure(text="")
+
+        ctk.CTkLabel(
+            self.card, text="Select Level",
+            font=("Segoe UI", 20, "bold"), text_color="#1a1a2e"
+        ).pack(pady=(14, 10))
+
+        for level_num in range(1, self.MAX_LEVEL + 1):
+            completed = level_num in self.player.completed_levels
+            topic = LEVEL_TOPICS.get(level_num, f"Level {level_num}")
+            lvl = Level(level_num)
+            diff_color = LEVEL_COLORS.get(lvl.difficulty, "#8892a6")
+
+            row = ctk.CTkFrame(self.card, fg_color="#f8f9fc",
+                               corner_radius=10, height=50,
+                               border_width=1,
+                               border_color="#c8e6c9" if completed
+                               else "#e0e6f0")
+            row.pack(fill="x", padx=16, pady=3)
+            row.pack_propagate(False)
+
+            mark = "Done" if completed else ""
+            mark_color = "#27ae60" if completed else "#d0d7e6"
+            ctk.CTkLabel(
+                row, text=mark,
+                font=("Segoe UI", 11, "bold"),
+                text_color=mark_color, width=36
+            ).pack(side="left", padx=(10, 2))
+
+            ctk.CTkLabel(
+                row, text=f"Level {level_num}: {topic}",
+                font=("Segoe UI", 12, "bold"),
+                text_color="#1a1a2e", anchor="w"
+            ).pack(side="left", padx=4, fill="x", expand=True)
+
+            ctk.CTkButton(
+                row, text="Play", font=("Segoe UI", 11, "bold"),
+                width=54, height=30, corner_radius=8,
+                fg_color="#4a6cf7", hover_color="#3b5ae0",
+                command=lambda ln=level_num: self.start_level(ln)
+            ).pack(side="right", padx=(4, 8))
+
+            ctk.CTkLabel(
+                row, text=f" {lvl.difficulty} ",
+                font=("Segoe UI", 10, "bold"),
+                text_color="white", fg_color=diff_color,
+                corner_radius=6, width=58, height=24
+            ).pack(side="right", padx=4)
+
+    def _build_question_ui(self):
+        for w in self.card.winfo_children():
+            w.destroy()
+
+        self.lbl_qnum = ctk.CTkLabel(
+            self.card, text="", font=("Segoe UI", 12),
+            text_color="#8892a6")
+        self.lbl_qnum.pack(anchor="w", padx=28, pady=(20, 4))
+
+        self.lbl_question = ctk.CTkLabel(
+            self.card, text="", font=("Segoe UI", 15, "bold"),
+            text_color="#1a1a2e", wraplength=520, justify="left")
+        self.lbl_question.pack(anchor="w", padx=28, pady=(0, 14))
+
+        self.option_frame = ctk.CTkFrame(self.card, fg_color="transparent")
+        self.option_frame.pack(fill="x", padx=28)
+
+        self.radio_buttons = []
+        for i in range(4):
+            rb = ctk.CTkRadioButton(
+                self.option_frame, text="", variable=self.selected,
+                value=i, font=("Segoe UI", 13), text_color="#3a3f55",
+                fg_color="#4a6cf7", hover_color="#dce3fc",
+                border_color="#b0b8d0")
+            rb.pack(anchor="w", pady=5)
+            self.radio_buttons.append(rb)
+
         self.lbl_feedback = ctk.CTkLabel(
             self.card, text="", font=("Segoe UI", 13, "bold"),
             text_color="#27ae60")
         self.lbl_feedback.pack(pady=(8, 4))
-
-        # ---------- start first level ----------
-        self.start_level(self.player.level)
 
     # -------------------- level control --------------------
     def start_level(self, level_num):
@@ -404,6 +491,11 @@ class GameUI:
         if level_num > self.MAX_LEVEL:
             self.show_victory()
             return
+        self._build_question_ui()
+        self.btn_submit.configure(
+            state="normal", text="Submit Answer",
+            fg_color="#4a6cf7", hover_color="#3b5ae0",
+            command=self.submit_answer)
         self.current_level = Level(level_num)
         self.questions = QuestionBank.get_questions(level_num)
         self.q_index = 0
@@ -486,21 +578,20 @@ class GameUI:
 
         if passed:
             self.player.add_topic(lvl.topic)
+            self.player.complete_level(lvl.level_num)
+            if lvl.level_num >= self.player.level:
+                self.player.level = lvl.level_num + 1
+            self.save_progress()
 
-            if self.player.level >= self.MAX_LEVEL:
-                # all levels passed, show victory screen
-                self.save_progress()
+            if len(self.player.completed_levels) >= self.MAX_LEVEL:
                 self.show_victory()
                 return
 
-            self.player.level_up()
-            self.save_progress()
             messagebox.showinfo(
                 "Level Passed!",
-                f"You scored {self.player.score + lvl.pass_score}"
-                f"  (need {lvl.pass_score})\n\n"
-                f"Congratulations! Moving to Level {self.player.level}!")
-            self.start_level(self.player.level)
+                f"Score: {self.player.score}  (need {lvl.pass_score})\n\n"
+                f"Level {lvl.level_num} completed!")
+            self.show_level_select()
         else:
             res = messagebox.askyesno(
                 "Level Failed",
@@ -510,18 +601,16 @@ class GameUI:
             if res:
                 self.start_level(lvl.level_num)
             else:
-                self.save_progress()
-                self.root.destroy()
+                self.show_level_select()
 
     def show_victory(self):
-        # Clear card content
         for w in self.card.winfo_children():
             w.destroy()
 
         ctk.CTkLabel(
             self.card, text="Congratulations!",
             font=("Segoe UI", 26, "bold"), text_color="#f39c12"
-        ).pack(pady=(60, 10))
+        ).pack(pady=(50, 10))
 
         ctk.CTkLabel(
             self.card, text="You have completed all levels!",
@@ -533,16 +622,31 @@ class GameUI:
             self.card, text=f"Mastered Topics:\n{topics}",
             font=("Segoe UI", 13), text_color="#8892a6",
             wraplength=460, justify="center"
-        ).pack(pady=(10, 30))
+        ).pack(pady=(10, 24))
+
+        victory_btns = ctk.CTkFrame(self.card, fg_color="transparent")
+        victory_btns.pack()
 
         ctk.CTkButton(
-            self.card, text="Quit Game", font=("Segoe UI", 14, "bold"),
+            victory_btns, text="Back to Levels",
+            font=("Segoe UI", 14, "bold"),
             height=42, corner_radius=10,
             fg_color="#4a6cf7", hover_color="#3b5ae0",
-            command=self.on_close
-        ).pack()
+            command=self.show_level_select
+        ).pack(side="left", padx=8)
 
-        self.btn_submit.configure(state="disabled")
+        ctk.CTkButton(
+            victory_btns, text="Quit Game",
+            font=("Segoe UI", 14, "bold"),
+            height=42, corner_radius=10,
+            fg_color="transparent", hover_color="#c34c4c",
+            text_color="#e74c3c", border_width=2, border_color="#e74c3c",
+            command=self.on_close
+        ).pack(side="left", padx=8)
+
+        self.btn_submit.configure(
+            state="disabled", text="All Levels Done!",
+            fg_color="#a0a8c0", hover_color="#a0a8c0")
 
     # -------------------- save / exit --------------------
     def save_progress(self):

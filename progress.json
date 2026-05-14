@@ -1,7 +1,7 @@
 {
   "cycy": {
     "username": "cycy",
-    "score": 10,
+    "score": 50,
     "level": 6,
     "mastered_topics": [
       "Python Basics - Level 1",
@@ -12,9 +12,15 @@
       "Python Basics - Level 6"
     ],
     "spaceship": {
-      "level": 5,
-      "total_damage": 230
-    }
+      "level": 7,
+      "total_damage": 314,
+      "completed_levels": [
+        6
+      ]
+    },
+    "completed_levels": [
+      1
+    ]
   },
   "wzq": {
     "spaceship": {

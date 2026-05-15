@@ -20,7 +20,10 @@
     },
     "completed_levels": [
       1
-    ]
+    ],
+    "drag_puzzle": {
+      "basic_syntax": 2
+    }
   },
   "wzq": {
     "spaceship": {
@@ -48,5 +51,96 @@
     "mastered_topics": [
       "Python Basics - Level 1"
     ]
+  },
+  "Jam": {
+    "username": "Jam",
+    "score": 50,
+    "level": 2,
+    "mastered_topics": [
+      "Python Basics - Level 1"
+    ],
+    "completed_levels": [
+      1
+    ],
+    "drag_puzzle": {
+      "basic_syntax": 5
+    },
+    "spaceship": {
+      "level": 2,
+      "total_damage": 52,
+      "completed_levels": [
+        1
+      ]
+    }
+  },
+  "123": {
+    "username": "123",
+    "score": 50,
+    "level": 2,
+    "mastered_topics": [
+      "Python Basics - Level 1"
+    ],
+    "completed_levels": [
+      1
+    ],
+    "drag_puzzle": {
+      "basic_syntax": 1
+    }
+  },
+  "234": {
+    "username": "234",
+    "score": 40,
+    "level": 2,
+    "mastered_topics": [
+      "Python Basics - Level 1"
+    ],
+    "completed_levels": [
+      1
+    ],
+    "drag_puzzle": {
+      "basic_syntax": 2
+    },
+    "spaceship": {
+      "level": 2,
+      "total_damage": 58,
+      "completed_levels": [
+        1
+      ]
+    }
+  },
+  "456": {
+    "username": "456",
+    "score": 40,
+    "level": 2,
+    "mastered_topics": [
+      "Python Basics - Level 1"
+    ],
+    "completed_levels": [
+      1
+    ],
+    "drag_puzzle": {
+      "basic_syntax": 4
+    }
+  },
+  "999": {
+    "username": "999",
+    "score": 40,
+    "level": 2,
+    "mastered_topics": [
+      "Python Basics - Level 1"
+    ],
+    "completed_levels": [
+      1
+    ],
+    "drag_puzzle": {
+      "basic_syntax": 5
+    },
+    "spaceship": {
+      "level": 2,
+      "total_damage": 62,
+      "completed_levels": [
+        1
+      ]
+    }
   }
 }

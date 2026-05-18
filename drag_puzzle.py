@@ -10,23 +10,23 @@ WIDTH, HEIGHT = 820, 600
 FPS = 60
 
 PALETTE = {
-    "bg":           "#F5F5F5",
+    "bg":           "#f0f4ff",
     "surface":      "#FFFFFF",
-    "overlay":      "#E0E0E0",
-    "text":         "#212121",
-    "subtext":      "#757575",
-    "blue":         "#42A5F5",
-    "green":        "#66BB6A",
-    "red":          "#EF4744",
-    "yellow":       "#FFA726",
+    "overlay":      "#e8ecf8",
+    "text":         "#1a1a2e",
+    "subtext":      "#8892a6",
+    "blue":         "#4a6cf7",
+    "green":        "#27ae60",
+    "red":          "#e74c3c",
+    "yellow":       "#f39c12",
     "mauve":        "#AB47BC",
     "teal":         "#26A69A",
     "peach":        "#FF7043",
-    "slot_bg":      "#E8E8E8",
-    "slot_border":  "#BDBDBD",
-    "block_border": "#9E9E9E",
+    "slot_bg":      "#e8ecf8",
+    "slot_border":  "#d0d7e6",
+    "block_border": "#b0b8d0",
     "white":        "#FFFFFF",
-    "progress_bg":  "#E0E0E0",
+    "progress_bg":  "#e0e6f0",
     "gold":         "#FFD54F",
 }
 
@@ -299,6 +299,7 @@ def get_font(size, bold=False):
 
 
 def load_progress():
+    """Load drag-puzzle progress for the current user from progress.json."""
     try:
         with open(PROGRESS_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -309,6 +310,7 @@ def load_progress():
 
 
 def save_progress(progress):
+    """Save drag-puzzle progress for the current user to progress.json."""
     try:
         with open(PROGRESS_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -322,6 +324,8 @@ def save_progress(progress):
 
 
 class Button:
+    """Clickable UI button with hover highlight effect."""
+
     def __init__(self, x, y, w, h, text, color, font):
         self.rect = pygame.Rect(x, y, w, h)
         self.text = text
@@ -352,6 +356,8 @@ class Button:
 
 
 class Block:
+    """Draggable code block that can be snapped into a target slot."""
+
     def __init__(self, x, y, code, color, font):
         self.rect = pygame.Rect(x, y, SLOT_W, SLOT_H)
         self.code = code
@@ -378,6 +384,8 @@ class Block:
 
 
 class Slot:
+    """Numbered drop target that accepts exactly one code block."""
+
     def __init__(self, x, y, index, font):
         self.rect = pygame.Rect(x, y, SLOT_W, SLOT_H)
         self.index = index
@@ -398,6 +406,8 @@ class Slot:
 
 
 class CodeDragPuzzle:
+    """Main game: drag-and-drop code ordering puzzle with 7 modules × 5 levels."""
+
     def __init__(self):
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("Code Puzzle | INT101")
@@ -465,8 +475,9 @@ class CodeDragPuzzle:
         self.module_done = False
 
     def _load_level(self):
-        self.blocks.clear()
+        """Populate blocks and slots from the current module/level puzzle data."""
         self.slots.clear()
+        self.blocks.clear()
         self.locked = False
         self.module_done = False
 
@@ -498,6 +509,7 @@ class CodeDragPuzzle:
             self.blocks.append(Block(LEFT_X, by, line, color, self.code_font))
 
     def _on_check(self):
+        """Compare slot order against correct order; lock if correct."""
         if self.locked:
             return
         user_order = [s.code for s in self.slots]
@@ -536,6 +548,7 @@ class CodeDragPuzzle:
             self.status_color = C["red"]
 
     def _on_reset(self):
+        """Reload the current level from scratch."""
         self.locked = False
         self.auto_next_timer = 0
         self.module_done = False
@@ -574,6 +587,7 @@ class CodeDragPuzzle:
         return rects
 
     def handle_events(self):
+        """Dispatch pygame events to menu or puzzle handlers."""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return False
@@ -675,6 +689,7 @@ class CodeDragPuzzle:
                 self._go_next()
 
     def draw(self):
+        """Render the current game state (menu or puzzle)."""
         self.screen.fill(C["bg"])
         if self.state == "menu":
             self._draw_menu()
@@ -683,6 +698,7 @@ class CodeDragPuzzle:
         pygame.display.flip()
 
     def _draw_menu(self):
+        """Render module selection screen with progress bars."""
         pygame.draw.rect(self.screen, C["surface"], (0, 0, WIDTH, HEADER_H))
         pygame.draw.line(self.screen, C["overlay"], (0, HEADER_H), (WIDTH, HEADER_H), 1)
 
@@ -761,6 +777,7 @@ class CodeDragPuzzle:
         self.screen.blit(footer_surf, (16, HEIGHT - 28))
 
     def _draw_puzzle(self):
+        """Render the drag-source area, drop slots, and toolbar."""
         pygame.draw.rect(self.screen, C["surface"], (0, 0, WIDTH, HEADER_H))
         pygame.draw.line(self.screen, C["overlay"], (0, HEADER_H), (WIDTH, HEADER_H), 1)
 
@@ -827,6 +844,7 @@ class CodeDragPuzzle:
             self.check_btn.visible = False
 
     def run(self):
+        """Start the main game loop (60 FPS)."""
         running = True
         while running:
             self.clock.tick(FPS)

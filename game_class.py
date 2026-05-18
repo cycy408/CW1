@@ -1,4 +1,4 @@
-# OOP ：Player + Level + QuestionBank + GameUI
+# OOP: Player + Level + QuestionBank + GameUI
 import customtkinter as ctk
 from tkinter import messagebox
 import random
@@ -294,6 +294,47 @@ class QuestionBank:
                     "answer": 1
                 },
             ],
+
+            # -------- Level 7: Exception Handling --------
+            7: [
+                {
+                    "question": "Which keyword catches exceptions in Python?",
+                    "options": ["catch", "except", "handle", "error"],
+                    "answer": 1
+                },
+                {
+                    "question": "What is the purpose of try/except?",
+                    "options": ["Define functions",
+                                "Handle runtime errors gracefully",
+                                "Create loops",
+                                "Import modules"],
+                    "answer": 1
+                },
+                {
+                    "question": "What does the 'finally' block do?",
+                    "options": ["Catches the exception",
+                                "Runs regardless of exception",
+                                "Skips the try block",
+                                "Raises a new error"],
+                    "answer": 1
+                },
+                {
+                    "question": "How to manually raise an error?",
+                    "options": ["throw Error()",
+                                "raise Exception()",
+                                "error()",
+                                "assert False"],
+                    "answer": 1
+                },
+                {
+                    "question": "When does ValueError occur?",
+                    "options": ["File not found",
+                                "Invalid type conversion",
+                                "Key not found in dict",
+                                "List index out of range"],
+                    "answer": 1
+                },
+            ],
         }
 
         questions = bank.get(level_num, bank[1])
@@ -308,6 +349,7 @@ LEVEL_TOPICS = {
     4: "Conditionals & Loops",
     5: "Functions",
     6: "Dictionaries & File I/O",
+    7: "Exception Handling",
 }
 
 LEVEL_COLORS = {
@@ -321,7 +363,7 @@ LEVEL_COLORS = {
 #  GameUI — custom tkinter
 # ============================================================
 class GameUI:
-    MAX_LEVEL = 6  # max level number
+    MAX_LEVEL = 7  # max level number
 
     def __init__(self, player, data_manager):
         """

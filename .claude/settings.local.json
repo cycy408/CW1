@@ -12,7 +12,11 @@
       "Bash(python -c \"import py_compile; py_compile.compile\\('main.py', doraise=True\\); print\\('OK'\\)\")",
       "Bash(python -c \"import py_compile; py_compile.compile\\('game.py', doraise=True\\); print\\('OK'\\)\")",
       "Bash(python -c \"import py_compile; py_compile.compile\\('spaceship_game.py', doraise=True\\); py_compile.compile\\('data_manager.py', doraise=True\\); py_compile.compile\\('main.py', doraise=True\\); print\\('All OK'\\)\")",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(python -m py_compile user_auth.py)",
+      "Bash(python -m py_compile game_class.py)",
+      "Bash(python -m py_compile spaceship_game.py)",
+      "Bash(python -c \"import py_compile; py_compile.compile\\('drag_puzzle.py', doraise=True\\); py_compile.compile\\('spaceship_game.py', doraise=True\\); print\\('Both files compile OK'\\)\")"
     ]
   }
 }

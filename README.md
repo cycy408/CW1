@@ -6,6 +6,29 @@
 
 ---
 
+## 环境要求
+
+- **Python 版本**: 3.8 及以上
+- **安装依赖**:
+
+```bash
+pip install -r requirements.txt
+```
+
+或手动安装：
+
+```bash
+pip install customtkinter pygame
+```
+
+- **启动方式**:
+
+```bash
+python main.py
+```
+
+---
+
 ## 项目结构
 
 ```
@@ -14,7 +37,7 @@ CW1/
 ├── user_auth.py         # 用户认证封装（注册 / 登录）
 ├── data_manager.py      # JSON 数据读写层（用户 + 游戏进度）
 ├── game_class.py        # 第一部分：知识问答游戏（customtkinter）
-├── drag_puzzel.py       # 第二部分：代码块拖拽排序（pygame）
+├── drag_puzzle.py       # 第二部分：代码块拖拽排序（pygame）
 ├── spaceship_game.py    # 第三部分：飞船 Boss 问答战（pygame）
 ├── users.json           # 用户账号数据
 ├── progress.json        # 所有游戏进度数据
@@ -97,11 +120,11 @@ CW1/
 **核心类设计：**
 
 - **`Player`** — 玩家数据类，包含用户名、分数、等级、已掌握主题、已通关等级。提供 `add_score()`、`level_up()`、`complete_level()` 等方法。
-- **`Level`** — 关卡配置类，自动根据等级分配难度（1-2 Easy / 3-4 Medium / 5-6 Hard），通关分为 40（满分 50）。
-- **`QuestionBank`** — 静态题库类，6 个等级，每级 5 道 Python 选择题，题目随机打乱。
+- **`Level`** — 关卡配置类，自动根据等级分配难度（1-2 Easy / 3-4 Medium / 5-7 Hard），通关分为 40（满分 50）。
+- **`QuestionBank`** — 静态题库类，7 个等级，每级 5 道 Python 选择题，题目随机打乱。
 - **`GameUI`** — 主游戏窗口（620×540），包含关卡选择界面和答题界面。
 
-**6 个等级主题：**
+**7 个等级主题：**
 
 | 等级 | 主题 | 难度 |
 |------|------|------|
@@ -111,14 +134,15 @@ CW1/
 | 4 | Conditionals & Loops | Medium |
 | 5 | Functions | Hard |
 | 6 | Dictionaries & File I/O | Hard |
+| 7 | Exception Handling | Hard |
 
 **玩法流程：**
 
-1. 关卡选择界面展示 6 关，每关显示主题、难度徽章（绿/黄/红），已完成的关卡标记 ✓。
+1. 关卡选择界面展示 7 关，每关显示主题、难度徽章（绿/黄/红），已完成的关卡标记 Done。
 2. 进入关卡后依次回答 5 道选择题，每题 10 分。
 3. 提交后显示正误反馈（绿色正确 / 红色错误并展示正确答案），按钮变为 "Next Question"。
 4. 5 题答完后结算：>= 40 分通关，记录进度；不通过可选择重试或返回。
-5. 全部 6 关通过后显示胜利界面，列出所有已掌握主题。
+5. 全部 7 关通过后显示胜利界面，列出所有已掌握主题。
 6. 随时可点击 "Save & Quit" 保存退出。
 
 具体代码编写逻辑其实很简单，主要是一些交互按键用 Claude 写了，其他部分应该都很好懂（实则不然）。
@@ -129,7 +153,7 @@ CW1/
 
 ### 二、代码块拖拽排序
 
-**文件**: `drag_puzzel.py`（约 842 行）| **UI**: pygame | **运行方式**: subprocess 独立进程，传用户名作为命令行参数
+**文件**: `drag_puzzle.py`（约 842 行）| **UI**: pygame | **运行方式**: subprocess 独立进程，传用户名作为命令行参数
 
 灵感来源于多邻国的拖拽答题界面。玩家需要将打乱的代码行按正确顺序拖入右侧编号槽位。
 
@@ -240,7 +264,7 @@ level_select → intro → playing → level_complete → level_select
 `main.py` 作为启动器，登录后进入游戏选择界面（customtkinter，520×560）：
 
 - **问答游戏** → 在主进程内直接实例化 `GameUI` 运行
-- **代码拖拽** → `subprocess.Popen(["python", "drag_puzzel.py", username])` 独立启动，等待子进程结束后重新显示选择界面
+- **代码拖拽** → `subprocess.Popen(["python", "drag_puzzle.py", username])` 独立启动，等待子进程结束后重新显示选择界面
 - **飞船游戏** → 同上 subprocess 方式
 
 （tkinter 做的 UI 交互页面，到底什么时候能好好改这坨。包括后面所有的交互都是 tkinter 做的。）
@@ -251,8 +275,7 @@ level_select → intro → playing → level_complete → level_select
 
 - 密码明文存储，无哈希保护
 - JSON 文件全量读写，数据量大时性能下降
-- 三款游戏的 UI 风格不一致（customtkinter vs pygame，配色方案不同）
-- 无 `requirements.txt`，依赖需手动安装（`customtkinter`、`pygame`）
+- 三款游戏统一使用蓝紫主色调（`#4a6cf7`），绿色成功 / 红色失败 / 橙色警告跨游戏一致
 - 飞船游戏中弹丸飞行速度为纯视觉效果，不影响得分判定
 
 （这个小糊项目的逻辑基本就是这样。）

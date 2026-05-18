@@ -1,19 +1,38 @@
 from data_manager import DataManager
 
+
+class AuthError(Exception):
+    """Custom exception for authentication failures."""
+    pass
+
+
 class UserAuth:
     def __init__(self):
         self.data_manager = DataManager()
 
     def do_register(self, username, password):
-        users = self.data_manager.load_users()
+        try:
+            users = self.data_manager.load_users()
+        except Exception as e:
+            return False, f"Failed to read user data: {e}"
+
         if username in users:
-            return False, "用户名已存在"
+            return False, "Username already exists"
+
         users[username] = password
-        self.data_manager.save_users(users)
-        return True, "注册成功"
+        try:
+            self.data_manager.save_users(users)
+        except Exception as e:
+            return False, f"Failed to save user data: {e}"
+
+        return True, "Registration successful"
 
     def check_login(self, username, password):
-        users = self.data_manager.load_users()
+        try:
+            users = self.data_manager.load_users()
+        except Exception as e:
+            return False, f"Failed to read user data: {e}"
+
         if username in users and users[username] == password:
-            return True, "登录成功"
-        return False, "账号或密码错误"
+            return True, "Login successful"
+        return False, "Incorrect username or password"

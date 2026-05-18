@@ -16,15 +16,15 @@ pygame.display.set_caption("Python Quiz Battle")
 
 BG = (6, 8, 18)
 WHITE = (220, 225, 235)
-ACCENT = (55, 130, 220)
-ACCENT_LIGHT = (90, 170, 255)
+ACCENT = (74, 108, 247)
+ACCENT_LIGHT = (110, 145, 255)
 CYAN = (0, 210, 200)
-GREEN = (50, 210, 120)
-GREEN_DIM = (25, 90, 55)
-RED = (210, 55, 65)
-RED_DIM = (80, 20, 25)
-YELLOW = (255, 210, 50)
-ORANGE = (240, 140, 40)
+GREEN = (39, 174, 96)
+GREEN_DIM = (20, 65, 40)
+RED = (231, 76, 60)
+RED_DIM = (80, 25, 20)
+YELLOW = (243, 180, 50)
+ORANGE = (243, 156, 18)
 TEXT_DIM = (70, 80, 100)
 PANEL_BG = (14, 18, 32)
 PANEL_BORDER = (35, 50, 85)
@@ -148,6 +148,8 @@ TOTAL_LEVELS = len(MODULES)
 
 # ---------------------- Particle ----------------------
 class Particle:
+    """Visual particle with velocity, life, and fade-out for effects."""
+
     def __init__(self, x, y, color, vx=0, vy=0, life=30, size=3):
         self.x, self.y = float(x), float(y)
         self.vx = vx + random.uniform(-1.5, 1.5)
@@ -174,6 +176,8 @@ class Particle:
 
 # ---------------------- Player ----------------------
 class PlayerShip(pygame.sprite.Sprite):
+    """Player-controlled spaceship with arrow-key movement and engine flicker."""
+
     def __init__(self):
         super().__init__()
         self.base_image = pygame.Surface((60, 56), pygame.SRCALPHA)
@@ -224,6 +228,8 @@ class PlayerShip(pygame.sprite.Sprite):
 
 # ---------------------- Boss ----------------------
 class BossShip(pygame.sprite.Sprite):
+    """Enemy boss ship with horizontal bounce movement and hit-flash effect."""
+
     def __init__(self):
         super().__init__()
         self.base_image = pygame.Surface((190, 130), pygame.SRCALPHA)
@@ -291,6 +297,8 @@ class BossShip(pygame.sprite.Sprite):
 
 # ---------------------- Projectile ----------------------
 class Projectile(pygame.sprite.Sprite):
+    """Upward-moving energy projectile with glow effect."""
+
     def __init__(self, x, y):
         super().__init__()
         self.image = pygame.Surface((8, 24), pygame.SRCALPHA)
@@ -309,6 +317,8 @@ class Projectile(pygame.sprite.Sprite):
 
 # ---------------------- Game ----------------------
 class Game:
+    """Main spaceship quiz-battle game with state machine and particle system."""
+
     def __init__(self, username):
         self.username = username
         self.dm = DataManager()
@@ -376,7 +386,7 @@ class Game:
         return MODULES[idx]
 
     def setup_level(self):
-        self.all_sprites.empty()
+        """Reset all sprites and state for a new level attempt."""
         self.projectiles.empty()
         self.particles.clear()
         self.player = PlayerShip()
@@ -419,6 +429,7 @@ class Game:
 
     # ---- Drawing ----
     def draw_background(self):
+        """Render starfield with 3 parallax layers and drifting nebulae."""
         screen.fill(BG)
         for nb in self.nebulae:
             x, y, radius, color, spd = nb
@@ -458,6 +469,7 @@ class Game:
         pygame.draw.rect(screen, border_color, (x, y, w, h), 1, border_radius=h // 2)
 
     def draw_hud(self):
+        """Render top-bar HUD: level, module name, boss HP bar, combo counter."""
         module = self.get_module()
 
         # Top-left: level & module
@@ -479,8 +491,8 @@ class Game:
         screen.blit(boss_label, (bar_x - 30, 16))
         self.draw_rounded_bar(bar_x + 40, 22, bar_w - 100, 14,
                               max(0, self.boss.hp / self.boss.max_hp),
-                              RED, RED_DIM, (120, 30, 35))
-        hp_text = self.font.render(f"{max(0, self.boss.hp)}/{self.boss.max_hp}", True, (200, 70, 80))
+                              RED, RED_DIM, (120, 35, 30))
+        hp_text = self.font.render(f"{max(0, self.boss.hp)}/{self.boss.max_hp}", True, (240, 110, 100))
         screen.blit(hp_text, (bar_x + bar_w - 50, 16))
 
         # Top-right: combo
@@ -489,7 +501,7 @@ class Game:
             pygame.draw.rect(combo_hud, (0, 0, 0, 100), (0, 0, 140, 36), border_radius=8)
             screen.blit(combo_hud, (SCREEN_WIDTH - 155, 10))
             pulse = abs(math.sin(self.tick * 0.1)) * 30
-            c = (255, int(200 + pulse), 0)
+            c = (243, int(160 + pulse), 0)
             combo_text = self.font.render(f"x{self.combo}", True, c)
             screen.blit(combo_text, (SCREEN_WIDTH - 100, 12))
             label = self.small_font.render("COMBO", True, YELLOW)
@@ -522,12 +534,16 @@ class Game:
                 p.draw(screen)
 
     def new_question(self):
+        """Pick a random question from the current module and show the overlay."""
         module = self.get_module()
         self.current_question = random.choice(module["questions"])
         self.show_question = True
         self.selected_option = 0
 
     def check_answer(self):
+        """Compare selected option to correct answer; apply damage/heal and feedback."""
+        if self.current_question is None:
+            return
         if self.selected_option == self.current_question["answer"]:
             self.combo += 1
             damage = 10 + (self.combo - 1) * 2
@@ -538,7 +554,7 @@ class Game:
             proj = Projectile(self.player.rect.centerx, self.player.rect.top)
             self.all_sprites.add(proj)
             self.projectiles.add(proj)
-            self.spawn_particles(self.player.rect.centerx, self.player.rect.top, (60, 180, 255), 8)
+            self.spawn_particles(self.player.rect.centerx, self.player.rect.top, (110, 145, 255), 8)
         else:
             self.combo = 0
             heal = 5
@@ -619,7 +635,7 @@ class Game:
                 pygame.draw.rect(screen, ACCENT_LIGHT, (opt_rect.x, opt_rect.y + 8, 3, 28), border_radius=2)
             label = chr(65 + i)
             label_color = ACCENT_LIGHT if is_sel else TEXT_DIM
-            text_color = WHITE if is_sel else (160, 165, 180)
+            text_color = WHITE if is_sel else (160, 168, 192)
             lt = self.small_font.render(label, True, label_color)
             screen.blit(lt, (opt_rect.x + 16, opt_rect.y + 12))
             ot = self.small_font.render(opt, True, text_color)
@@ -735,7 +751,7 @@ class Game:
             screen.blit(num, (r.x + 20,
                               r.y + (r.h - num.get_height()) // 2))
 
-            name_color = WHITE if (is_sel or is_hov) else (160, 165, 180)
+            name_color = WHITE if (is_sel or is_hov) else (160, 168, 192)
             name = self.font.render(module["name"], True, name_color)
             screen.blit(name, (r.x + 130,
                                r.y + (r.h - name.get_height()) // 2))
@@ -812,6 +828,7 @@ class Game:
         self.state = "level_select"
 
     def run(self):
+        """Start the main game loop with state-driven rendering."""
         running = True
         while running:
             clock.tick(FPS)
@@ -895,7 +912,7 @@ class Game:
                 hits = pygame.sprite.spritecollide(self.boss, self.projectiles, True)
                 for hit in hits:
                     self.boss.hit_flash = 8
-                    self.spawn_particles(hit.rect.centerx, hit.rect.centery, (255, 100, 40), 15)
+                    self.spawn_particles(hit.rect.centerx, hit.rect.centery, (243, 156, 18), 15)
                 if self.quiz_cooldown > 0:
                     self.quiz_cooldown -= 1
                     if self.quiz_cooldown <= 0:

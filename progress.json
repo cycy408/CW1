@@ -22,7 +22,7 @@
       1
     ],
     "drag_puzzle": {
-      "basic_syntax": 2
+      "basic_syntax": 3
     }
   },
   "wzq": {
@@ -41,7 +41,8 @@
     },
     "drag_puzzle": {
       "basic_syntax": 5,
-      "control_structure": 4
+      "control_structure": 5,
+      "data_structure": 2
     }
   },
   "7k7k": {
